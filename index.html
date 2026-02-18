@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SK13 Live Navigator</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<style>
+  :root {
+    --bg-glass: rgba(255, 255, 255, 0.85);
+    --border-glass: rgba(0, 0, 0, 0.08);
+    --accent: #007AFF; 
+    --success: #34C759; 
+    --danger: #FF3B30; 
+    --text-primary: #1c1c1e;
+    --text-secondary: #8e8e93;
+    --shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, system-ui, sans-serif; background: #f2f2f7; overflow: hidden; }
+  
+  #map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 1; }
+  #map { position: absolute; top: 50%; left: 50%; width: 130vmax; height: 130vmax; transform: translate(-50%, -50%) rotate(0deg); transform-origin: center center; transition: transform 0.3s linear; }
+
+  .glass-card { background: var(--bg-glass); backdrop-filter: blur(15px); border: 1px solid var(--border-glass); border-radius: 20px; box-shadow: var(--shadow); }
+
+  #topBar { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 450px; z-index: 1000; display: flex; gap: 8px; justify-content: center;}
+  #shareRoute { padding: 14px 20px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-grow: 1; justify-content: center;}
+  
+  .action-btn { padding: 14px 18px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; border: none; outline: none; transition: transform 0.2s; }
+  .action-btn:active { transform: scale(0.95); }
+  #endNavBtn { color: var(--danger); }
+  #liveShareBtn { color: var(--success); }
+
+  #shareDashboard { position: fixed; top: 85px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 350px; padding: 12px; z-index: 1001; display: flex; flex-direction: column; gap: 8px; }
+  .search-box { display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(0,0,0,0.04); border-radius: 14px; }
+  .search-box input { background: transparent; border: none; outline: none; width: 100%; font-size: 14px; color: var(--text-primary); }
+  #suggestions { max-height: 200px; overflow-y: auto; border-radius: 10px; background: rgba(255,255,255,0.5); margin-top: 5px; }
+  .suggestion-item { padding: 10px; font-size: 13px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; }
+  .menu-btn { background: transparent; border: none; color: var(--text-primary); padding: 12px; border-radius: 14px; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .menu-btn i { color: var(--accent); width: 20px; }
+
+  #dashboard { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 450px; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
+  #place { font-size: 13px; color: var(--text-secondary); max-width: 60%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  #time { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* Start Navigation Button */
+  #startNavBtn { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; border: none; padding: 14px 32px; border-radius: 30px; font-weight: 700; font-size: 16px; z-index: 2000; box-shadow: 0 10px 20px rgba(0, 122, 255, 0.3); transition: transform 0.2s; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  #startNavBtn:active { transform: translateX(-50%) scale(0.95); }
+
+  #recenterBtn { position: fixed; bottom: 100px; right: 20px; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--accent); cursor: pointer; z-index: 999; border: 1px solid var(--border-glass); }
+  #compassBtn { position: fixed; bottom: 160px; right: 20px; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--accent); cursor: pointer; z-index: 999; border: 1px solid var(--border-glass); transition: all 0.3s ease; }
+  .active-compass { background: var(--accent) !important; color: white !important; }
+  #speedometer { position: fixed; bottom: 100px; left: 20px; width: 50px; height: 50px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-primary); z-index: 999; border: 1px solid var(--border-glass); line-height: 1; pointer-events: none; }
+  #speedValue { font-size: 18px; font-weight: 800; }
+  .speed-unit { font-size: 9px; color: var(--text-secondary); font-weight: 600; margin-top: 2px;}
+
+  #viewerBanner { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 1000; box-shadow: var(--shadow); display: flex; align-items: center; gap: 8px;}
+  .pulse-dot { width: 8px; height: 8px; background: white; border-radius: 50%; animation: pulse-white 1.5s infinite; }
+  
+  .route-line { stroke-dasharray: 12, 9; animation: flow 150s linear infinite; }
+  @keyframes flow { from { stroke-dashoffset: 500; } to { stroke-dashoffset: 0; } }
+  @keyframes pulse-white { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); } 70% { box-shadow: 0 0 0 6px rgba(255,255,255,0); } 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="topBar">
+  <div id="shareRoute" class="glass-card"><i class="fa-solid fa-bars-staggered"></i> Menu</div>
+  <button id="liveShareBtn" class="glass-card action-btn hidden"><i class="fa-solid fa-satellite-dish"></i> Share Live</button>
+  <button id="endNavBtn" class="glass-card action-btn hidden"><i class="fa-solid fa-xmark"></i> End</button>
+</div>
+
+<div id="viewerBanner" class="hidden"><div class="pulse-dot"></div> Viewing Live Ride</div>
+
+<div id="shareDashboard" class="glass-card hidden">
+  <div class="search-box"><i class="fa-solid fa-magnifying-glass" style="color: var(--text-secondary);"></i><input type="text" id="searchInput" placeholder="Search destination..." autocomplete="off"></div>
+  <div id="suggestions" class="hidden"></div>
+  <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.05); margin: 5px 0;">
+  <button class="menu-btn" id="currentLocBtn"><i class="fa-solid fa-street-view"></i> Copy Coordinate Link</button>
+  <button class="menu-btn" id="chooseLocBtn"><i class="fa-solid fa-map-location-dot"></i> Choose on Map</button>
+</div>
+
+<div id="map-container"><div id="map"></div></div>
+
+<button id="startNavBtn" class="hidden"><i class="fa-solid fa-location-arrow"></i> Start Navigation</button>
+<div id="centerPin" class="hidden" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -100%); z-index:1500; pointer-events:none;">
+  <i class="fa-solid fa-location-dot" style="font-size:42px;color:#FF3B30; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));"></i>
+</div>
+
+<button id="confirmPickerBtn" class="hidden" style="position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); background: #1c1c1e; color: white; border: none; padding: 14px 32px; border-radius: 30px; font-weight: 700; font-size: 16px; z-index: 2000; box-shadow: 0 10px 20px rgba(0,0,0,0.3); cursor: pointer;">
+  <i class="fa-solid fa-check"></i> Confirm Destination
+</button>
+
+<div id="dashboard" class="glass-card"><span id="place">Locating...</span><span id="time">00:00:00</span></div>
+
+<div id="compassBtn" class="glass-card"><i class="fa-solid fa-compass"></i></div>
+<div id="recenterBtn" class="glass-card"><i class="fa-solid fa-crosshairs"></i></div>
+<div id="speedometer" class="glass-card"><span id="speedValue">0</span><span class="speed-unit">km/h</span></div>
+
+<script>
+// =========================================================
+// 0. FIREBASE SETUP
+// =========================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBerPKfHPiR41EE7axibLt_Yx55WVXQMFE",
+  authDomain: "sk13-navigator.firebaseapp.com",
+  databaseURL: "https://sk13-navigator-default-rtdb.firebaseio.com",
+  projectId: "sk13-navigator",
+  storageBucket: "sk13-navigator.firebasestorage.app",
+  messagingSenderId: "1079689742847",
+  appId: "1:1079689742847:web:b874ea64e9c77cc36fbfca"
+};
+
+// Initialize Firebase using the v8 standard
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// =========================================================
+// 1. APP MODES & CONFIG
+// =========================================================
+const urlParams = new URLSearchParams(window.location.search);
+const trackingId = urlParams.get('track');
+const isViewerMode = !!trackingId;
+
+const map = L.map('map', { zoomControl: false, zoomSnap: 0.1 }).setView([20.5937, 78.9629], 5);
+L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: '© Google' }).addTo(map);
+
+const bikeIcon = L.divIcon({
+  html: `<div id="bike-wrapper" style="width:60px; height:60px; display:flex; align-items:center; justify-content:center; transition: transform 0.3s ease-out; will-change: transform;">
+      <img id="bike" src="Byke2.png" onerror="this.style.display='none'; document.getElementById('bike-fallback').style.display='block';" style="width:60px; height:60px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+      <div id="bike-fallback" style="display:none; width:0; height:0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 30px solid #007AFF;"></div>
+    </div>`,
+  iconSize: [60,60], className: 'bike-marker'
+});
+
+let marker, routeLine, fullPath = [], destMarker, searchTimeout;
+let lastLatLng = null, currentRotation = 0, targetPos = null, animationFrame;
+let lastTime = Date.now(); 
+const HEADING_OFFSET = 0; 
+let isHeadingUp = false; 
+let activeSessionId = null;
+let isNavigating = false; 
+
+// =========================================================
+// 2. VIEWER MODE (PULL DATA FROM FIREBASE)
+// =========================================================
+if (isViewerMode) {
+    document.getElementById('topBar').classList.add('hidden');
+    document.getElementById('compassBtn').classList.add('hidden');
+    document.getElementById('viewerBanner').classList.remove('hidden');
+    document.getElementById("place").textContent = "Waiting for rider connection...";
+
+    // Listen to Firebase Realtime Database
+    db.ref('rides/' + trackingId).on('value', (snapshot) => {
+        const data = snapshot.val();
+        
+        if (data && data.active) {
+            const remotePos = L.latLng(data.lat, data.lng);
+            
+            if (!marker) {
+                marker = L.marker(remotePos, {icon: bikeIcon}).addTo(map);
+                map.setView(remotePos, 16);
+                
+                const destLat = urlParams.get('destLat');
+                const destLng = urlParams.get('destLng');
+                if(destLat && destLng) drawRoute(L.latLng(destLat, destLng), true);
+            } else {
+                targetPos = remotePos;
+                cancelAnimationFrame(animationFrame);
+                smoothMove(); 
+                
+                const wrapper = document.getElementById('bike-wrapper');
+                if (wrapper) wrapper.style.transform = `rotate(${data.heading}deg)`;
+                document.getElementById('speedValue').textContent = Math.round(data.speed);
+                document.getElementById("place").textContent = "Tracking Rider Live...";
+            }
+        } else if (data && !data.active) {
+            document.getElementById("place").textContent = "Ride has ended.";
+            document.getElementById('speedValue').textContent = "0";
+        }
+    });
+}
+
+// =========================================================
+// 3. CORE FUNCTIONS (SMOOTH MOVE & ROUTING)
+// =========================================================
+function calculateBearing(lat1, lng1, lat2, lng2) {
+    const dLon = (lng2 - lng1) * Math.PI / 180;
+    const y = Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180);
+    const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) - Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon);
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+function smoothMove() {
+    if (!marker || !targetPos) return;
+    const currentPos = marker.getLatLng();
+    const lat = currentPos.lat + (targetPos.lat - currentPos.lat) * 0.15;
+    const lng = currentPos.lng + (targetPos.lng - currentPos.lng) * 0.15;
+    const newLatLng = L.latLng(lat, lng);
+    marker.setLatLng(newLatLng);
+    
+    if (isNavigating || isViewerMode) {
+        updateRouteVisuals(newLatLng);
+        if (isHeadingUp && !isViewerMode) { map.panTo(newLatLng, {animate: false}); }
+    }
+    if (newLatLng.distanceTo(targetPos) > 0.01) { animationFrame = requestAnimationFrame(smoothMove); }
+}
+
+function drawRoute(dest, isViewer = false) {
+  const start = marker ? marker.getLatLng() : map.getCenter();
+  document.getElementById("place").textContent = "Calculating route...";
+  
+  fetch(`https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`)
+    .then(r => r.json()).then(data => {
+      // Error handling if no route exists
+      if (!data.routes || data.routes.length === 0) {
+          alert("No driving route found! Try a location closer to roads.");
+          document.getElementById("place").textContent = "Current Area";
+          return;
+      }
+
+      fullPath = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+      if (routeLine) map.removeLayer(routeLine);
+      if (destMarker) map.removeLayer(destMarker);
+      routeLine = L.polyline(fullPath, { color: '#007AFF', weight: 6, className: 'route-line' }).addTo(map);
+      destMarker = L.circleMarker(dest, { radius: 8, color: '#fff', fillColor: '#FF3B30', fillOpacity: 1, weight: 3 }).addTo(map);
+      
+      if(!isViewer) {
+          map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+          document.getElementById("place").textContent = "Route Ready";
+          
+          document.getElementById("startNavBtn").classList.remove("hidden");
+          document.getElementById("endNavBtn").classList.add("hidden");
+          document.getElementById("liveShareBtn").classList.add("hidden");
+          isNavigating = false;
+      }
+    })
+    .catch(err => {
+        console.error("Routing error:", err);
+        alert("Failed to calculate route. Check your internet connection.");
+        document.getElementById("place").textContent = "Routing Failed";
+    });
+}
+
+function updateRouteVisuals(currentPos) {
+  if (!routeLine || !fullPath.length) return;
+  let closestIdx = 0; let minDist = Infinity;
+  fullPath.forEach((c, i) => {
+    const d = currentPos.distanceTo(L.latLng(c));
+    if (d < minDist) { minDist = d; closestIdx = i; }
+  });
+  routeLine.setLatLngs([currentPos, ...fullPath.slice(closestIdx + 1)]);
+}
+
+// =========================================================
+// 4. BUTTON LOGIC (START, SHARE & END)
+// =========================================================
+if (!isViewerMode) {
+    document.getElementById("startNavBtn").addEventListener("click", () => {
+        isNavigating = true;
+        document.getElementById("startNavBtn").classList.add("hidden");
+        document.getElementById("endNavBtn").classList.remove("hidden");
+        document.getElementById("liveShareBtn").classList.remove("hidden");
+        document.getElementById("place").textContent = "Navigating...";
+        if (marker) map.flyTo(marker.getLatLng(), 18);
+        if(!isHeadingUp) document.getElementById('compassBtn').click();
+    });
+
+    document.getElementById("liveShareBtn").addEventListener("click", () => {
+        activeSessionId = 'SK13-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        let currentUrl = window.location.href.split('?')[0]; 
+        let destParams = destMarker ? `&destLat=${destMarker.getLatLng().lat}&destLng=${destMarker.getLatLng().lng}` : '';
+        let shareLink = `${currentUrl}?track=${activeSessionId}${destParams}`;
+
+        if(navigator.share) {
+            navigator.share({ title: 'Track my ride live!', text: 'Follow my live ride on SK13 Navigator:', url: shareLink });
+        } else {
+            navigator.clipboard.writeText(shareLink);
+            alert("Live Tracking Link Copied! Send it to your friends.");
+        }
+        document.getElementById("liveShareBtn").innerHTML = `<i class="fa-solid fa-satellite-dish"></i> Live`;
+        document.getElementById("liveShareBtn").style.color = "#fff";
+        document.getElementById("liveShareBtn").style.backgroundColor = "var(--success)";
+    });
+
+    document.getElementById("endNavBtn").addEventListener("click", () => {
+        if (routeLine) map.removeLayer(routeLine);
+        if (destMarker) map.removeLayer(destMarker);
+        fullPath = [];
+        
+        if (activeSessionId) {
+            db.ref('rides/' + activeSessionId).update({ active: false });
+        }
+        
+        activeSessionId = null; 
+        isNavigating = false;
+        
+        document.getElementById("endNavBtn").classList.add("hidden");
+        document.getElementById("liveShareBtn").classList.add("hidden");
+        document.getElementById("startNavBtn").classList.add("hidden");
+        
+        document.getElementById("liveShareBtn").innerHTML = `<i class="fa-solid fa-satellite-dish"></i> Share Live`;
+        document.getElementById("liveShareBtn").style.color = "var(--success)";
+        document.getElementById("liveShareBtn").style.backgroundColor = "transparent";
+
+        if(isHeadingUp) document.getElementById('compassBtn').click();
+        if (marker) map.flyTo(marker.getLatLng(), 16);
+    });
+
+    document.getElementById('compassBtn').addEventListener('click', function() {
+      isHeadingUp = !isHeadingUp;
+      this.classList.toggle('active-compass');
+      const mapEl = document.getElementById('map');
+      if (isHeadingUp) {
+          mapEl.style.transform = `translate(-50%, -50%) rotate(${-currentRotation}deg)`;
+          if (marker) map.flyTo(marker.getLatLng(), 18);
+      } else {
+          mapEl.style.transform = `translate(-50%, -50%) rotate(0deg)`;
+      }
+    });
+
+// =========================================================
+// 5. RIDER LIVE TRACKING (PUSH DATA TO FIREBASE)
+// =========================================================
+    navigator.geolocation.watchPosition(pos => {
+        const newPos = L.latLng(pos.coords.latitude, pos.coords.longitude);
+        const currentTime = Date.now();
+        
+        if (!marker) {
+            marker = L.marker(newPos, {icon: bikeIcon}).addTo(map);
+            map.setView(newPos, 16);
+        } else {
+            targetPos = newPos;
+            cancelAnimationFrame(animationFrame);
+            smoothMove(); 
+
+            let bearing = pos.coords.heading; 
+            if (bearing === null && lastLatLng) bearing = calculateBearing(lastLatLng.lat, lastLatLng.lng, newPos.lat, newPos.lng);
+            
+            if (bearing !== null) {
+                let diff = (bearing + HEADING_OFFSET) - (currentRotation % 360);
+                if (diff > 180) diff -= 360;
+                if (diff < -180) diff += 360;
+                currentRotation += diff;
+                
+                const wrapper = document.getElementById('bike-wrapper');
+                if (wrapper) wrapper.style.transform = `rotate(${currentRotation}deg)`;
+                
+                const mapEl = document.getElementById('map');
+                if (isHeadingUp) mapEl.style.transform = `translate(-50%, -50%) rotate(${-currentRotation}deg)`;
+            }
+
+            let speedKmh = 0;
+            if (pos.coords.speed !== null && !isNaN(pos.coords.speed)) speedKmh = pos.coords.speed * 3.6;
+            else if (lastLatLng) {
+                let timeDiffSec = (currentTime - lastTime) / 1000;
+                if (timeDiffSec > 0) speedKmh = (lastLatLng.distanceTo(newPos) / timeDiffSec) * 3.6;
+            }
+            if (speedKmh > 250 || speedKmh < 2) speedKmh = 0; 
+            document.getElementById('speedValue').textContent = Math.round(speedKmh);
+
+            // ---> PUSH TO FIREBASE IF SHARING <---
+            if (activeSessionId) {
+                db.ref('rides/' + activeSessionId).set({
+                    lat: newPos.lat,
+                    lng: newPos.lng,
+                    heading: currentRotation,
+                    speed: speedKmh,
+                    active: true,
+                    timestamp: currentTime
+                });
+            }
+        }
+        
+        lastLatLng = newPos;
+        lastTime = currentTime;
+
+        if(!isNavigating && !fullPath.length) {
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${newPos.lat}&lon=${newPos.lng}&format=json`)
+            .then(r => r.json()).then(d => document.getElementById("place").textContent = d.address.city || d.address.suburb || "Current Area");
+        }
+    }, null, { enableHighAccuracy: true, maximumAge: 0 });
+
+// =========================================================
+// 6. UI & SEARCH EVENTS (HIDDEN IN VIEWER MODE)
+// =========================================================
+    const searchInput = document.getElementById('searchInput');
+    const suggestionsBox = document.getElementById('suggestions');
+
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      const query = e.target.value;
+      if (query.length < 3) { suggestionsBox.classList.add('hidden'); return; }
+      searchTimeout = setTimeout(() => {
+        const userLoc = marker ? marker.getLatLng() : { lat: 20.5, lng: 78.9 };
+        const viewbox = `${userLoc.lng - 0.5},${userLoc.lat - 0.5},${userLoc.lng + 0.5},${userLoc.lat + 0.5}`;
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=6&viewbox=${viewbox}&lat=${userLoc.lat}&lon=${userLoc.lng}`)
+          .then(r => r.json()).then(data => {
+            suggestionsBox.innerHTML = '';
+            if (data.length === 0) { suggestionsBox.classList.add('hidden'); return; }
+            data.forEach(p => {
+              const item = document.createElement('div');
+              item.className = 'suggestion-item';
+              item.innerHTML = `<div style="display: flex; flex-direction: column;"><span style="font-weight: 600;">${p.display_name.split(',')[0]}</span><span style="font-size: 11px; color: var(--text-secondary);">${p.display_name.split(',').slice(1,3).join(',')}</span></div>`;
+              item.onclick = () => { drawRoute(L.latLng(p.lat, p.lon)); suggestionsBox.classList.add('hidden'); document.getElementById('shareDashboard').classList.add('hidden'); searchInput.value = ""; };
+              suggestionsBox.appendChild(item);
+            });
+            suggestionsBox.classList.remove('hidden');
+          });
+      }, 400);
+    });
+
+    document.getElementById("shareRoute").onclick = (e) => { e.stopPropagation(); document.getElementById("shareDashboard").classList.toggle("hidden"); };
+    document.addEventListener("click", (e) => { if(!document.getElementById("shareDashboard").contains(e.target) && e.target.id !== 'shareRoute') document.getElementById("shareDashboard").classList.add("hidden"); });
+
+        document.getElementById("chooseLocBtn").onclick = () => {
+      // 1. Hide the menu
+      document.getElementById("shareDashboard").classList.add("hidden");
+      
+      // 2. Show the Pin and the Confirm Button
+      document.getElementById("centerPin").classList.remove("hidden");
+      document.getElementById("confirmPickerBtn").classList.remove("hidden");
+    };
+
+    // 3. What happens when you click Confirm
+    document.getElementById("confirmPickerBtn").onclick = () => {
+      // Hide the Pin and Button again
+      document.getElementById("centerPin").classList.add("hidden");
+      document.getElementById("confirmPickerBtn").classList.add("hidden");
+      
+      // Draw the route to exactly where the crosshair is
+      drawRoute(map.getCenter()); 
+    };
+
+
+    document.getElementById("currentLocBtn").onclick = () => {
+      const latlng = marker.getLatLng();
+      const url = `https://www.google.com/maps?q=${latlng.lat},${latlng.lng}`;
+      if(navigator.share) navigator.share({ title: 'My Location', url });
+      else { navigator.clipboard.writeText(url); alert("Link Copied!"); }
+    };
+} // END !isViewerMode check
+
+document.getElementById("recenterBtn").onclick = () => { if (marker) map.flyTo(marker.getLatLng(), 16); };
+setInterval(() => { document.getElementById("time").textContent = new Date().toLocaleTimeString("en-GB", {hour12:false}); }, 1000);
+</script>
+</body>
+</html>
