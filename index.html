@@ -136,7 +136,7 @@ L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, 
 
 const bikeIcon = L.divIcon({
   html: `<div id="bike-wrapper" style="width:60px; height:60px; display:flex; align-items:center; justify-content:center; transition: transform 0.3s ease-out; will-change: transform;">
-      <img id="bike" src="./Byke2.png" onerror="this.style.display='none'; document.getElementById('bike-fallback').style.display='block';" style="width:60px; height:60px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+      <img id="bike" src="./Byke4.png" onerror="this.style.display='none'; document.getElementById('bike-fallback').style.display='block';" style="width:60px; height:60px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
       <div id="bike-fallback" style="display:none; width:0; height:0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 30px solid #007AFF;"></div>
     </div>`,
   iconSize: [60,60], className: 'bike-marker'
