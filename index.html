@@ -52,14 +52,57 @@
   .glass-card { background: var(--bg-glass); backdrop-filter: blur(15px); border: 1px solid var(--border-glass); border-radius: 20px; box-shadow: var(--shadow); color: var(--text-primary); transition: background 0.3s, border 0.3s, color 0.3s; }
 
   #topBar { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 450px; z-index: 1000; display: flex; gap: 8px; justify-content: center;}
-  #shareRoute { padding: 14px 20px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-grow: 1; justify-content: center;}
   
-  .action-btn { padding: 14px 18px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; border: none; outline: none; transition: transform 0.2s; }
+  #shareRoute { padding: 14px 20px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-grow: 1; justify-content: center; }
+  
+  /* --- SPLIT ANIMATION LOGIC --- */
+  .action-btn { 
+    padding: 14px 18px; 
+    font-size: 14px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    gap: 6px; 
+    border: none; 
+    outline: none; 
+    max-width: 160px; /* Base expanded size */
+    overflow: hidden; 
+    white-space: nowrap;
+    opacity: 1;
+    /* Smooth transition for width, padding, and opacity to create the split effect */
+    transition: max-width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease, padding 0.5s ease, margin 0.5s ease, transform 0.2s; 
+  }
   .action-btn:active { transform: scale(0.95); }
+  
+  /* Overriding global .hidden just for action buttons to allow flexbox animation */
+  .action-btn.hidden { 
+    display: flex !important; 
+    max-width: 0; 
+    padding-left: 0; 
+    padding-right: 0; 
+    opacity: 0; 
+    margin-left: -8px; /* Cancels out topBar's gap exactly to eliminate ghost spacing */
+    pointer-events: none; 
+  }
+  
   #endNavBtn { color: var(--danger); }
   #liveShareBtn { color: var(--success); }
 
-  #shareDashboard { position: fixed; top: 85px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 350px; padding: 12px; z-index: 1001; display: flex; flex-direction: column; gap: 8px; }
+  /* --- SWIPE DOWN ANIMATION LOGIC --- */
+  #shareDashboard { 
+    position: fixed; top: 85px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 350px; padding: 12px; z-index: 1001; display: flex; flex-direction: column; gap: 8px; 
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, visibility 0.4s;
+  }
+  /* Overriding global .hidden to slide it up cleanly instead of abrupt display:none */
+  #shareDashboard.hidden {
+    display: flex !important;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(-25px) scale(0.95);
+  }
+
   .search-box { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--search-bg); border-radius: 14px; transition: background 0.3s; }
   .search-box input { background: transparent; border: none; outline: none; width: 100%; font-size: 14px; color: var(--text-primary); transition: color 0.3s; }
   #suggestions { max-height: 200px; overflow-y: auto; border-radius: 10px; background: var(--sugg-bg); margin-top: 5px; transition: background 0.3s; }
@@ -92,6 +135,8 @@
   .route-line { stroke-dasharray: 12, 9; animation: flow 150s linear infinite; }
   @keyframes flow { from { stroke-dashoffset: 500; } to { stroke-dashoffset: 0; } }
   @keyframes pulse-white { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); } 70% { box-shadow: 0 0 0 6px rgba(255,255,255,0); } 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } }
+  
+  /* Global Hidden Utility */
   .hidden { display: none !important; }
 </style>
 </head>
