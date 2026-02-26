@@ -27,7 +27,6 @@
     --border-light: rgba(0,0,0,0.05);
   }
 
-  /* Dark Mode Variables */
   body.dark-mode {
     --bg-glass: rgba(28, 28, 30, 0.85);
     --border-glass: rgba(255, 255, 255, 0.15);
@@ -39,7 +38,6 @@
     background: #000;
   }
 
-  /* Dark Mode Map Filter */
   body.dark-mode .leaflet-layer {
     filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
   }
@@ -55,53 +53,21 @@
   
   #shareRoute { padding: 14px 20px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-grow: 1; justify-content: center; }
   
-  /* --- SPLIT ANIMATION LOGIC --- */
   .action-btn { 
-    padding: 14px 18px; 
-    font-size: 14px; 
-    font-weight: 600; 
-    cursor: pointer; 
-    display: flex; 
-    align-items: center; 
-    gap: 6px; 
-    border: none; 
-    outline: none; 
-    max-width: 160px; /* Base expanded size */
-    overflow: hidden; 
-    white-space: nowrap;
-    opacity: 1;
-    /* Smooth transition for width, padding, and opacity to create the split effect */
+    padding: 14px 18px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; border: none; outline: none; max-width: 160px; overflow: hidden; white-space: nowrap; opacity: 1;
     transition: max-width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease, padding 0.5s ease, margin 0.5s ease, transform 0.2s; 
   }
   .action-btn:active { transform: scale(0.95); }
-  
-  /* Overriding global .hidden just for action buttons to allow flexbox animation */
-  .action-btn.hidden { 
-    display: flex !important; 
-    max-width: 0; 
-    padding-left: 0; 
-    padding-right: 0; 
-    opacity: 0; 
-    margin-left: -8px; /* Cancels out topBar's gap exactly to eliminate ghost spacing */
-    pointer-events: none; 
-  }
+  .action-btn.hidden { display: flex !important; max-width: 0; padding-left: 0; padding-right: 0; opacity: 0; margin-left: -8px; pointer-events: none; }
   
   #endNavBtn { color: var(--danger); }
   #liveShareBtn { color: var(--success); }
 
-  /* --- SWIPE DOWN ANIMATION LOGIC --- */
   #shareDashboard { 
     position: fixed; top: 85px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 350px; padding: 12px; z-index: 1001; display: flex; flex-direction: column; gap: 8px; 
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, visibility 0.4s;
   }
-  /* Overriding global .hidden to slide it up cleanly instead of abrupt display:none */
-  #shareDashboard.hidden {
-    display: flex !important;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transform: translateX(-50%) translateY(-25px) scale(0.95);
-  }
+  #shareDashboard.hidden { display: flex !important; opacity: 0; visibility: hidden; pointer-events: none; transform: translateX(-50%) translateY(-25px) scale(0.95); }
 
   .search-box { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--search-bg); border-radius: 14px; transition: background 0.3s; }
   .search-box input { background: transparent; border: none; outline: none; width: 100%; font-size: 14px; color: var(--text-primary); transition: color 0.3s; }
@@ -111,10 +77,26 @@
   .menu-btn i { color: var(--accent); width: 20px; }
 
   #dashboard { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 450px; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
-  #place { font-size: 13px; color: var(--text-secondary); max-width: 60%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: color 0.3s; }
-  #time { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); transition: color 0.3s; }
+  #place { font-size: 13px; color: var(--text-secondary); max-width: 45%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: color 0.3s; }
+  #time { display: none; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); transition: color 0.3s; }
 
-  /* Start Navigation Button */
+  /* iOS Battery Styles */
+  .battery-container { display: flex; align-items: center; gap: 5px; }
+  .battery-pill { 
+    position: relative; width: 26px; height: 14px; border: 1.8px solid var(--text-primary); border-radius: 4.5px; padding: 1px; display: flex; align-items: center; box-sizing: border-box; 
+  }
+  .battery-pill::after { 
+    content: ''; position: absolute; right: -4px; top: 3.5px; width: 2px; height: 4px; background: var(--text-primary); border-radius: 0 2px 2px 0; 
+  }
+  .battery-level { 
+    height: 100%; background: var(--text-primary); border-radius: 3px; transition: width 0.3s ease, background-color 0.3s ease; 
+  }
+  .battery-percentage { 
+    position: absolute; display: none; width: 100%; text-align: center; font-size: 8px; font-weight: 800; color: var(--text-primary); mix-blend-mode: difference; left: 0; pointer-events: none;
+  }
+  .charging-icon { font-size: 10px; color: var(--success); }
+  .low-battery { background: var(--danger) !important; }
+
   #startNavBtn { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; border: none; padding: 14px 32px; border-radius: 30px; font-weight: 700; font-size: 16px; z-index: 2000; box-shadow: 0 10px 20px rgba(0, 122, 255, 0.3); transition: transform 0.2s; display: flex; align-items: center; gap: 10px; cursor: pointer; }
   #startNavBtn:active { transform: translateX(-50%) scale(0.95); }
 
@@ -126,7 +108,6 @@
   #speedValue { font-size: 18px; font-weight: 800; }
   .speed-unit { font-size: 9px; color: var(--text-secondary); font-weight: 600; margin-top: 2px;}
 
-  /* Theme Toggle Button */
   #themeToggleBtn { position: fixed; bottom: 160px; left: 20px; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--accent); cursor: pointer; z-index: 999; border: 1px solid var(--border-glass); transition: all 0.3s ease; }
 
   #viewerBanner { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 1000; box-shadow: var(--shadow); display: flex; align-items: center; gap: 8px;}
@@ -136,8 +117,39 @@
   @keyframes flow { from { stroke-dashoffset: 500; } to { stroke-dashoffset: 0; } }
   @keyframes pulse-white { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); } 70% { box-shadow: 0 0 0 6px rgba(255,255,255,0); } 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } }
   
-  /* Global Hidden Utility */
   .hidden { display: none !important; }
+  
+  /* iOS Signal Bar Styles */
+.signal-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 13px;
+  padding-bottom: 0px;
+}
+
+.signal-bars .bar {
+  width: 3px;
+  background: var(--text-secondary);
+  border-radius: 1.2px;
+  transition: background 0.3s ease, height 0.3s ease;
+}
+
+.signal-bars .bar:nth-child(1) { height: 30%; }
+.signal-bars .bar:nth-child(2) { height: 55%; }
+.signal-bars .bar:nth-child(3) { height: 80%; }
+.signal-bars .bar:nth-child(4) { height: 100%; }
+
+.signal-bars.active .bar {
+  background: var(--text-primary);
+}
+
+.signal-bars.low .bar:nth-child(n+3) {
+  background: var(--text-secondary) !important;
+  opacity: 0.3;
+}
+
+
 </style>
 </head>
 <body>
@@ -169,7 +181,28 @@
   <i class="fa-solid fa-check"></i> Confirm Destination
 </button>
 
-<div id="dashboard" class="glass-card"><span id="place">Locating...</span><span id="time">00:00:00</span></div>
+<div id="dashboard" class="glass-card">
+    <span id="place">Locating...</span>
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <div id="signalContainer" class="signal-bars">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div> 
+
+        <div id="batteryDisplay" class="battery-container hidden">
+            <i id="chargingBolt" class="fa-solid fa-bolt-lightning charging-icon hidden"></i>
+            <div class="battery-pill">
+                <div id="batteryLevel" class="battery-level" style="width: 100%;"></div>
+                <span id="batteryPercent" class="battery-percentage">--</span>
+            </div>
+        </div>
+               
+        <span id="time">00:00:00</span>
+    </div>
+</div>
+
 
 <div id="compassBtn" class="glass-card"><i class="fa-solid fa-compass"></i></div>
 <div id="recenterBtn" class="glass-card"><i class="fa-solid fa-crosshairs"></i></div>
@@ -177,9 +210,6 @@
 <div id="themeToggleBtn" class="glass-card"><i class="fa-solid fa-moon"></i></div>
 
 <script>
-// =========================================================
-// 0. FIREBASE SETUP
-// =========================================================
 const firebaseConfig = {
   apiKey: "AIzaSyBerPKfHPiR41EE7axibLt_Yx55WVXQMFE",
   authDomain: "sk13-navigator.firebaseapp.com",
@@ -190,13 +220,9 @@ const firebaseConfig = {
   appId: "1:1079689742847:web:b874ea64e9c77cc36fbfca"
 };
 
-// Initialize Firebase using the v8 standard
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// =========================================================
-// 1. APP MODES & CONFIG
-// =========================================================
 const urlParams = new URLSearchParams(window.location.search);
 const trackingId = urlParams.get('track');
 const isViewerMode = !!trackingId;
@@ -215,31 +241,38 @@ const bikeIcon = L.divIcon({
 let marker, routeLine, fullPath = [], destMarker, searchTimeout;
 let lastLatLng = null, currentRotation = 0, targetPos = null, animationFrame;
 let lastTime = Date.now(); 
-const HEADING_OFFSET = 0; 
 let isHeadingUp = false; 
 let activeSessionId = null;
 let isNavigating = false; 
+let riderBattery = { level: null, charging: false };
 
-// =========================================================
-// 2. VIEWER MODE (PULL DATA FROM FIREBASE)
-// =========================================================
+// --- VIEWER MODE (RESTORED LISTENER) ---
 if (isViewerMode) {
     document.getElementById('topBar').classList.add('hidden');
     document.getElementById('compassBtn').classList.add('hidden');
     document.getElementById('viewerBanner').classList.remove('hidden');
-    document.getElementById("place").textContent = "Waiting for rider connection...";
+    document.getElementById("place").textContent = "Connecting to rider...";
 
-    // Listen to Firebase Realtime Database
     db.ref('rides/' + trackingId).on('value', (snapshot) => {
         const data = snapshot.val();
-        
         if (data && data.active) {
             const remotePos = L.latLng(data.lat, data.lng);
             
+            // Battery Update
+            if (data.battery !== undefined) {
+                document.getElementById('batteryDisplay').classList.remove('hidden');
+                document.getElementById('batteryPercent').textContent = data.battery;
+                document.getElementById('batteryLevel').style.width = data.battery + '%';
+                const levelBar = document.getElementById('batteryLevel');
+                if (data.battery <= 20) levelBar.classList.add('low-battery');
+                else levelBar.classList.remove('low-battery');
+                if (data.charging) document.getElementById('chargingBolt').classList.remove('hidden');
+                else document.getElementById('chargingBolt').classList.add('hidden');
+            }
+
             if (!marker) {
                 marker = L.marker(remotePos, {icon: bikeIcon}).addTo(map);
                 map.setView(remotePos, 16);
-                
                 const destLat = urlParams.get('destLat');
                 const destLng = urlParams.get('destLng');
                 if(destLat && destLng) drawRoute(L.latLng(destLat, destLng), true);
@@ -247,7 +280,6 @@ if (isViewerMode) {
                 targetPos = remotePos;
                 cancelAnimationFrame(animationFrame);
                 smoothMove(); 
-                
                 const wrapper = document.getElementById('bike-wrapper');
                 if (wrapper) wrapper.style.transform = `rotate(${data.heading}deg)`;
                 document.getElementById('speedValue').textContent = Math.round(data.speed);
@@ -260,9 +292,19 @@ if (isViewerMode) {
     });
 }
 
-// =========================================================
-// 3. CORE FUNCTIONS (SMOOTH MOVE & ROUTING)
-// =========================================================
+// --- RIDER BATTERY API ---
+if (!isViewerMode && 'getBattery' in navigator) {
+    navigator.getBattery().then(batt => {
+        const updateBatt = () => {
+            riderBattery.level = Math.round(batt.level * 100);
+            riderBattery.charging = batt.charging;
+        };
+        batt.addEventListener('chargingchange', updateBatt);
+        batt.addEventListener('levelchange', updateBatt);
+        updateBatt();
+    });
+}
+
 function calculateBearing(lat1, lng1, lat2, lng2) {
     const dLon = (lng2 - lng1) * Math.PI / 180;
     const y = Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180);
@@ -277,47 +319,57 @@ function smoothMove() {
     const lng = currentPos.lng + (targetPos.lng - currentPos.lng) * 0.15;
     const newLatLng = L.latLng(lat, lng);
     marker.setLatLng(newLatLng);
-    
     if (isNavigating || isViewerMode) {
         updateRouteVisuals(newLatLng);
-        if (isHeadingUp && !isViewerMode) { map.panTo(newLatLng, {animate: false}); }
+        if (isHeadingUp && !isViewerMode) map.panTo(newLatLng, {animate: false});
     }
-    if (newLatLng.distanceTo(targetPos) > 0.01) { animationFrame = requestAnimationFrame(smoothMove); }
+    if (newLatLng.distanceTo(targetPos) > 0.01) animationFrame = requestAnimationFrame(smoothMove);
 }
+function updateSignalUI() {
+    const signalContainer = document.getElementById('signalContainer');
+    // Check for network information if available
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    
+    if (navigator.onLine) {
+        signalContainer.classList.add('active');
+        if (connection && (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g')) {
+            signalContainer.classList.add('low');
+        } else {
+            signalContainer.classList.remove('low');
+        }
+    } else {
+        signalContainer.classList.remove('active');
+    }
+}
+
+// Event listeners for connectivity
+window.addEventListener('online', updateSignalUI);
+window.addEventListener('offline', updateSignalUI);
+updateSignalUI(); 
 
 function drawRoute(dest, isViewer = false) {
   const start = marker ? marker.getLatLng() : map.getCenter();
   document.getElementById("place").textContent = "Calculating route...";
-  
   fetch(`https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`)
     .then(r => r.json()).then(data => {
-      // Error handling if no route exists
       if (!data.routes || data.routes.length === 0) {
-          alert("No driving route found! Try a location closer to roads.");
+          alert("No driving route found!");
           document.getElementById("place").textContent = "Current Area";
           return;
       }
-
       fullPath = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
       if (routeLine) map.removeLayer(routeLine);
       if (destMarker) map.removeLayer(destMarker);
       routeLine = L.polyline(fullPath, { color: '#007AFF', weight: 6, className: 'route-line' }).addTo(map);
       destMarker = L.circleMarker(dest, { radius: 8, color: '#fff', fillColor: '#FF3B30', fillOpacity: 1, weight: 3 }).addTo(map);
-      
       if(!isViewer) {
           map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
           document.getElementById("place").textContent = "Route Ready";
-          
           document.getElementById("startNavBtn").classList.remove("hidden");
           document.getElementById("endNavBtn").classList.add("hidden");
           document.getElementById("liveShareBtn").classList.add("hidden");
           isNavigating = false;
       }
-    })
-    .catch(err => {
-        console.error("Routing error:", err);
-        alert("Failed to calculate route. Check your internet connection.");
-        document.getElementById("place").textContent = "Routing Failed";
     });
 }
 
@@ -331,9 +383,6 @@ function updateRouteVisuals(currentPos) {
   routeLine.setLatLngs([currentPos, ...fullPath.slice(closestIdx + 1)]);
 }
 
-// =========================================================
-// 4. BUTTON LOGIC (START, SHARE & END)
-// =========================================================
 if (!isViewerMode) {
     document.getElementById("startNavBtn").addEventListener("click", () => {
         isNavigating = true;
@@ -350,61 +399,32 @@ if (!isViewerMode) {
         let currentUrl = window.location.href.split('?')[0]; 
         let destParams = destMarker ? `&destLat=${destMarker.getLatLng().lat}&destLng=${destMarker.getLatLng().lng}` : '';
         let shareLink = `${currentUrl}?track=${activeSessionId}${destParams}`;
-
-        if(navigator.share) {
-            navigator.share({ title: 'Track my ride live!', text: 'Follow my live ride on SK13 Navigator:', url: shareLink });
-        } else {
-            navigator.clipboard.writeText(shareLink);
-            alert("Live Tracking Link Copied! Send it to your friends.");
-        }
+        if(navigator.share) navigator.share({ title: 'Track my ride live!', text: 'Follow my live ride on SK13 Navigator:', url: shareLink });
+        else { navigator.clipboard.writeText(shareLink); alert("Live Tracking Link Copied!"); }
         document.getElementById("liveShareBtn").innerHTML = `<i class="fa-solid fa-satellite-dish"></i> Live`;
-        document.getElementById("liveShareBtn").style.color = "#fff";
         document.getElementById("liveShareBtn").style.backgroundColor = "var(--success)";
+        document.getElementById("liveShareBtn").style.color = "#fff";
     });
 
     document.getElementById("endNavBtn").addEventListener("click", () => {
         if (routeLine) map.removeLayer(routeLine);
         if (destMarker) map.removeLayer(destMarker);
         fullPath = [];
-        
-        if (activeSessionId) {
-            db.ref('rides/' + activeSessionId).update({ active: false });
-        }
-        
-        activeSessionId = null; 
-        isNavigating = false;
-        
+        if (activeSessionId) db.ref('rides/' + activeSessionId).update({ active: false });
+        activeSessionId = null; isNavigating = false;
         document.getElementById("endNavBtn").classList.add("hidden");
         document.getElementById("liveShareBtn").classList.add("hidden");
         document.getElementById("startNavBtn").classList.add("hidden");
-        
         document.getElementById("liveShareBtn").innerHTML = `<i class="fa-solid fa-satellite-dish"></i> Share Live`;
-        document.getElementById("liveShareBtn").style.color = "var(--success)";
         document.getElementById("liveShareBtn").style.backgroundColor = "transparent";
-
+        document.getElementById("liveShareBtn").style.color = "var(--success)";
         if(isHeadingUp) document.getElementById('compassBtn').click();
         if (marker) map.flyTo(marker.getLatLng(), 16);
     });
 
-    document.getElementById('compassBtn').addEventListener('click', function() {
-      isHeadingUp = !isHeadingUp;
-      this.classList.toggle('active-compass');
-      const mapEl = document.getElementById('map');
-      if (isHeadingUp) {
-          mapEl.style.transform = `translate(-50%, -50%) rotate(${-currentRotation}deg)`;
-          if (marker) map.flyTo(marker.getLatLng(), 18);
-      } else {
-          mapEl.style.transform = `translate(-50%, -50%) rotate(0deg)`;
-      }
-    });
-
-// =========================================================
-// 5. RIDER LIVE TRACKING (PUSH DATA TO FIREBASE)
-// =========================================================
     navigator.geolocation.watchPosition(pos => {
         const newPos = L.latLng(pos.coords.latitude, pos.coords.longitude);
         const currentTime = Date.now();
-        
         if (!marker) {
             marker = L.marker(newPos, {icon: bikeIcon}).addTo(map);
             map.setView(newPos, 16);
@@ -412,60 +432,36 @@ if (!isViewerMode) {
             targetPos = newPos;
             cancelAnimationFrame(animationFrame);
             smoothMove(); 
-
             let bearing = pos.coords.heading; 
             if (bearing === null && lastLatLng) bearing = calculateBearing(lastLatLng.lat, lastLatLng.lng, newPos.lat, newPos.lng);
-            
             if (bearing !== null) {
-                let diff = (bearing + HEADING_OFFSET) - (currentRotation % 360);
-                if (diff > 180) diff -= 360;
-                if (diff < -180) diff += 360;
+                let diff = bearing - (currentRotation % 360);
+                if (diff > 180) diff -= 360; if (diff < -180) diff += 360;
                 currentRotation += diff;
-                
                 const wrapper = document.getElementById('bike-wrapper');
                 if (wrapper) wrapper.style.transform = `rotate(${currentRotation}deg)`;
-                
-                const mapEl = document.getElementById('map');
-                if (isHeadingUp) mapEl.style.transform = `translate(-50%, -50%) rotate(${-currentRotation}deg)`;
+                if (isHeadingUp) document.getElementById('map').style.transform = `translate(-50%, -50%) rotate(${-currentRotation}deg)`;
             }
-
-            let speedKmh = 0;
-            if (pos.coords.speed !== null && !isNaN(pos.coords.speed)) speedKmh = pos.coords.speed * 3.6;
-            else if (lastLatLng) {
-                let timeDiffSec = (currentTime - lastTime) / 1000;
-                if (timeDiffSec > 0) speedKmh = (lastLatLng.distanceTo(newPos) / timeDiffSec) * 3.6;
-            }
-            if (speedKmh > 250 || speedKmh < 2) speedKmh = 0; 
+            let speedKmh = (pos.coords.speed !== null && pos.coords.speed > 0) ? pos.coords.speed * 3.6 : 0;
             document.getElementById('speedValue').textContent = Math.round(speedKmh);
 
-            // ---> PUSH TO FIREBASE IF SHARING <---
             if (activeSessionId) {
                 db.ref('rides/' + activeSessionId).set({
-                    lat: newPos.lat,
-                    lng: newPos.lng,
-                    heading: currentRotation,
-                    speed: speedKmh,
-                    active: true,
-                    timestamp: currentTime
+                    lat: newPos.lat, lng: newPos.lng, heading: currentRotation, speed: speedKmh,
+                    battery: riderBattery.level, charging: riderBattery.charging, active: true, timestamp: currentTime
                 });
             }
         }
-        
-        lastLatLng = newPos;
-        lastTime = currentTime;
-
+        lastLatLng = newPos; lastTime = currentTime;
         if(!isNavigating && !fullPath.length) {
             fetch(`https://nominatim.openstreetmap.org/reverse?lat=${newPos.lat}&lon=${newPos.lng}&format=json`)
             .then(r => r.json()).then(d => document.getElementById("place").textContent = d.address.city || d.address.suburb || "Current Area");
         }
     }, null, { enableHighAccuracy: true, maximumAge: 0 });
 
-// =========================================================
-// 6. UI & SEARCH EVENTS (HIDDEN IN VIEWER MODE)
-// =========================================================
+    // RESTORED SEARCH & MENU LOGIC
     const searchInput = document.getElementById('searchInput');
     const suggestionsBox = document.getElementById('suggestions');
-
     searchInput.addEventListener('input', (e) => {
       clearTimeout(searchTimeout);
       const query = e.target.value;
@@ -491,52 +487,34 @@ if (!isViewerMode) {
 
     document.getElementById("shareRoute").onclick = (e) => { e.stopPropagation(); document.getElementById("shareDashboard").classList.toggle("hidden"); };
     document.addEventListener("click", (e) => { if(!document.getElementById("shareDashboard").contains(e.target) && e.target.id !== 'shareRoute') document.getElementById("shareDashboard").classList.add("hidden"); });
-
-    document.getElementById("chooseLocBtn").onclick = () => {
-      // 1. Hide the menu
-      document.getElementById("shareDashboard").classList.add("hidden");
-      
-      // 2. Show the Pin and the Confirm Button
-      document.getElementById("centerPin").classList.remove("hidden");
-      document.getElementById("confirmPickerBtn").classList.remove("hidden");
+    
+    document.getElementById("chooseLocBtn").onclick = () => { document.getElementById("shareDashboard").classList.add("hidden"); document.getElementById("centerPin").classList.remove("hidden"); document.getElementById("confirmPickerBtn").classList.remove("hidden"); };
+    document.getElementById("confirmPickerBtn").onclick = () => { document.getElementById("centerPin").classList.add("hidden"); document.getElementById("confirmPickerBtn").classList.add("hidden"); drawRoute(map.getCenter()); };
+    
+    document.getElementById("currentLocBtn").onclick = () => { 
+        const latlng = marker.getLatLng();
+        const url = `https://www.google.com/maps?q=${latlng.lat},${latlng.lng}`;
+        navigator.clipboard.writeText(url); alert("Coordinate Link Copied!"); 
     };
-
-    // 3. What happens when you click Confirm
-    document.getElementById("confirmPickerBtn").onclick = () => {
-      // Hide the Pin and Button again
-      document.getElementById("centerPin").classList.add("hidden");
-      document.getElementById("confirmPickerBtn").classList.add("hidden");
-      
-      // Draw the route to exactly where the crosshair is
-      drawRoute(map.getCenter()); 
-    };
-
-    document.getElementById("currentLocBtn").onclick = () => {
-      const latlng = marker.getLatLng();
-      const url = `https://www.google.com/maps?q=${latlng.lat},${latlng.lng}`;
-      if(navigator.share) navigator.share({ title: 'My Location', url });
-      else { navigator.clipboard.writeText(url); alert("Link Copied!"); }
-    };
-} // END !isViewerMode check
+}
 
 document.getElementById("recenterBtn").onclick = () => { if (marker) map.flyTo(marker.getLatLng(), 16); };
 
-// =========================================================
-// 7. THEME TOGGLE LOGIC
-// =========================================================
-const themeToggleBtn = document.getElementById('themeToggleBtn');
-themeToggleBtn.addEventListener('click', () => {
-  document.body.classList.toggle('dark-mode');
-  const icon = themeToggleBtn.querySelector('i');
-  
-  // Swap the icon between moon and sun
-  if (document.body.classList.contains('dark-mode')) {
-    icon.classList.remove('fa-moon');
-    icon.classList.add('fa-sun');
+document.getElementById('compassBtn').onclick = function() {
+  isHeadingUp = !isHeadingUp;
+  this.classList.toggle('active-compass');
+  if (isHeadingUp) {
+      if (marker) map.flyTo(marker.getLatLng(), 18);
+      document.getElementById('map').style.transform = `translate(-50%, -50%) rotate(${-currentRotation}deg)`;
   } else {
-    icon.classList.remove('fa-sun');
-    icon.classList.add('fa-moon');
+      document.getElementById('map').style.transform = `translate(-50%, -50%) rotate(0deg)`;
   }
+};
+
+document.getElementById('themeToggleBtn').addEventListener('click', () => {
+  document.body.classList.toggle('dark-mode');
+  const icon = document.getElementById('themeToggleBtn').querySelector('i');
+  icon.classList.toggle('fa-moon'); icon.classList.toggle('fa-sun');
 });
 
 setInterval(() => { document.getElementById("time").textContent = new Date().toLocaleTimeString("en-GB", {hour12:false}); }, 1000);
