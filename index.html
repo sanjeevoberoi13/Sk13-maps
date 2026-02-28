@@ -83,13 +83,13 @@
   /* iOS Battery Styles */
   .battery-container { display: flex; align-items: center; gap: 5px; }
   .battery-pill { 
-    position: relative; width: 26px; height: 14px; border: 1.8px solid var(--text-primary); border-radius: 4.5px; padding: 1px; display: flex; align-items: center; box-sizing: border-box; 
+    position: relative; width: 26px; height: 14px; border: 1.4px solid var(--text-primary); border-radius: 4.7px; padding: 1px; display: flex; align-items: center; box-sizing: border-box; 
   }
   .battery-pill::after { 
     content: ''; position: absolute; right: -4px; top: 3.5px; width: 2px; height: 4px; background: var(--text-primary); border-radius: 0 2px 2px 0; 
   }
   .battery-level { 
-    height: 97%; background: var(--text-primary); border-radius: 4px; transition: width 0.3s ease, background-color 0.3s ease; 
+    height: 97%; background: var(--text-primary); border-radius: 3px; transition: width 0.3s ease, background-color 0.3s ease; 
   }
   .battery-percentage { 
     position: absolute; display: none; width: 100%; text-align: center; font-size: 8px; font-weight: 800; color: var(--text-primary); mix-blend-mode: difference; left: 0; pointer-events: none;
@@ -110,7 +110,7 @@
 
   #themeToggleBtn { position: fixed; bottom: 160px; left: 20px; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--accent); cursor: pointer; z-index: 999; border: 1px solid var(--border-glass); transition: all 0.3s ease; }
 
-  #viewerBanner { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 1000; box-shadow: var(--shadow); display: flex; align-items: center; gap: 8px;}
+  #viewerBanner { position: fixed; top: 40px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 1000; box-shadow: var(--shadow); display: flex; align-items: center; gap: 8px;}
   .pulse-dot { width: 8px; height: 8px; background: white; border-radius: 50%; animation: pulse-white 1.5s infinite; }
   
   .route-line { stroke-dasharray: 12, 9; animation: flow 150s linear infinite; }
@@ -192,7 +192,6 @@
         </div> 
 
         <div id="batteryDisplay" class="battery-container hidden">
-            <i id="chargingBolt" class="fa-solid fa-bolt-lightning charging-icon hidden"></i>
             <div class="battery-pill">
                 <div id="batteryLevel" class="battery-level" style="width: 100%;"></div>
                 <span id="batteryPercent" class="battery-percentage">--</span>
@@ -227,6 +226,11 @@ const urlParams = new URLSearchParams(window.location.search);
 const trackingId = urlParams.get('track');
 const isViewerMode = !!trackingId;
 
+// --- 1. RESTORE THEME ON LOAD ---
+if (localStorage.getItem('theme') === 'dark') {
+  document.body.classList.add('dark-mode');
+}
+
 const map = L.map('map', { zoomControl: false, zoomSnap: 0.1 }).setView([20.5937, 78.9629], 5);
 L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: '© Google' }).addTo(map);
 
@@ -242,11 +246,15 @@ let marker, routeLine, fullPath = [], destMarker, searchTimeout;
 let lastLatLng = null, currentRotation = 0, targetPos = null, animationFrame;
 let lastTime = Date.now(); 
 let isHeadingUp = false; 
-let activeSessionId = null;
 let isNavigating = false; 
 let riderBattery = { level: null, charging: false };
 
-// --- VIEWER MODE (RESTORED LISTENER) ---
+// --- 2. LOAD PENDING SESSION DATA ---
+let activeSessionId = localStorage.getItem('activeSessionId') || null;
+let pendingResumeDest = JSON.parse(localStorage.getItem('navDestination'));
+let pendingWasNavigating = localStorage.getItem('isNavigating') === 'true';
+
+// VIEWER MODE
 if (isViewerMode) {
     document.getElementById('topBar').classList.add('hidden');
     document.getElementById('compassBtn').classList.add('hidden');
@@ -257,8 +265,6 @@ if (isViewerMode) {
         const data = snapshot.val();
         if (data && data.active) {
             const remotePos = L.latLng(data.lat, data.lng);
-            
-            // Battery Update
             if (data.battery !== undefined) {
                 document.getElementById('batteryDisplay').classList.remove('hidden');
                 document.getElementById('batteryPercent').textContent = data.battery;
@@ -266,8 +272,6 @@ if (isViewerMode) {
                 const levelBar = document.getElementById('batteryLevel');
                 if (data.battery <= 20) levelBar.classList.add('low-battery');
                 else levelBar.classList.remove('low-battery');
-                if (data.charging) document.getElementById('chargingBolt').classList.remove('hidden');
-                else document.getElementById('chargingBolt').classList.add('hidden');
             }
 
             if (!marker) {
@@ -292,7 +296,7 @@ if (isViewerMode) {
     });
 }
 
-// --- RIDER BATTERY API ---
+// RIDER BATTERY API
 if (!isViewerMode && 'getBattery' in navigator) {
     navigator.getBattery().then(batt => {
         const updateBatt = () => {
@@ -325,11 +329,10 @@ function smoothMove() {
     }
     if (newLatLng.distanceTo(targetPos) > 0.01) animationFrame = requestAnimationFrame(smoothMove);
 }
+
 function updateSignalUI() {
     const signalContainer = document.getElementById('signalContainer');
-    // Check for network information if available
     const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    
     if (navigator.onLine) {
         signalContainer.classList.add('active');
         if (connection && (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g')) {
@@ -341,13 +344,12 @@ function updateSignalUI() {
         signalContainer.classList.remove('active');
     }
 }
-
-// Event listeners for connectivity
 window.addEventListener('online', updateSignalUI);
 window.addEventListener('offline', updateSignalUI);
 updateSignalUI(); 
 
-function drawRoute(dest, isViewer = false) {
+// --- 3. MODIFIED DRAW ROUTE (Handles Auto-Resume) ---
+function drawRoute(dest, isViewer = false, autoStart = false) {
   const start = marker ? marker.getLatLng() : map.getCenter();
   document.getElementById("place").textContent = "Calculating route...";
   fetch(`https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`)
@@ -362,13 +364,22 @@ function drawRoute(dest, isViewer = false) {
       if (destMarker) map.removeLayer(destMarker);
       routeLine = L.polyline(fullPath, { color: '#007AFF', weight: 6, className: 'route-line' }).addTo(map);
       destMarker = L.circleMarker(dest, { radius: 8, color: '#fff', fillColor: '#FF3B30', fillOpacity: 1, weight: 3 }).addTo(map);
+      
       if(!isViewer) {
+          // SAVE DESTINATION TO STORAGE
+          localStorage.setItem('navDestination', JSON.stringify({lat: dest.lat, lng: dest.lng}));
+          
           map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
           document.getElementById("place").textContent = "Route Ready";
           document.getElementById("startNavBtn").classList.remove("hidden");
           document.getElementById("endNavBtn").classList.add("hidden");
           document.getElementById("liveShareBtn").classList.add("hidden");
           isNavigating = false;
+
+          // AUTO START IF RESTORED FROM REFRESH
+          if (autoStart) {
+              document.getElementById("startNavBtn").click();
+          }
       }
     });
 }
@@ -386,21 +397,36 @@ function updateRouteVisuals(currentPos) {
 if (!isViewerMode) {
     document.getElementById("startNavBtn").addEventListener("click", () => {
         isNavigating = true;
+        localStorage.setItem('isNavigating', 'true'); // SAVE STATE
+
         document.getElementById("startNavBtn").classList.add("hidden");
         document.getElementById("endNavBtn").classList.remove("hidden");
         document.getElementById("liveShareBtn").classList.remove("hidden");
         document.getElementById("place").textContent = "Navigating...";
+        
+        // Restore active Live Share visual if it was already sharing before refresh
+        if (activeSessionId) {
+            document.getElementById("liveShareBtn").innerHTML = `<i class="fa-solid fa-satellite-dish"></i> Live`;
+            document.getElementById("liveShareBtn").style.backgroundColor = "var(--success)";
+            document.getElementById("liveShareBtn").style.color = "#fff";
+        }
+
         if (marker) map.flyTo(marker.getLatLng(), 18);
         if(!isHeadingUp) document.getElementById('compassBtn').click();
     });
 
     document.getElementById("liveShareBtn").addEventListener("click", () => {
-        activeSessionId = 'SK13-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        if (!activeSessionId) {
+            activeSessionId = 'SK13-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            localStorage.setItem('activeSessionId', activeSessionId); // SAVE ID
+        }
         let currentUrl = window.location.href.split('?')[0]; 
         let destParams = destMarker ? `&destLat=${destMarker.getLatLng().lat}&destLng=${destMarker.getLatLng().lng}` : '';
         let shareLink = `${currentUrl}?track=${activeSessionId}${destParams}`;
+        
         if(navigator.share) navigator.share({ title: 'Track my ride live!', text: 'Follow my live ride on SK13 Navigator:', url: shareLink });
         else { navigator.clipboard.writeText(shareLink); alert("Live Tracking Link Copied!"); }
+        
         document.getElementById("liveShareBtn").innerHTML = `<i class="fa-solid fa-satellite-dish"></i> Live`;
         document.getElementById("liveShareBtn").style.backgroundColor = "var(--success)";
         document.getElementById("liveShareBtn").style.color = "#fff";
@@ -411,7 +437,14 @@ if (!isViewerMode) {
         if (destMarker) map.removeLayer(destMarker);
         fullPath = [];
         if (activeSessionId) db.ref('rides/' + activeSessionId).update({ active: false });
-        activeSessionId = null; isNavigating = false;
+        activeSessionId = null; 
+        isNavigating = false;
+        
+        // CLEAR SAVED SESSION ON END
+        localStorage.removeItem('navDestination');
+        localStorage.removeItem('isNavigating');
+        localStorage.removeItem('activeSessionId');
+
         document.getElementById("endNavBtn").classList.add("hidden");
         document.getElementById("liveShareBtn").classList.add("hidden");
         document.getElementById("startNavBtn").classList.add("hidden");
@@ -428,6 +461,12 @@ if (!isViewerMode) {
         if (!marker) {
             marker = L.marker(newPos, {icon: bikeIcon}).addTo(map);
             map.setView(newPos, 16);
+
+            // --- 4. TRIGGERS ROUTE RESUME ONLY AFTER GPS FOUND YOUR REAL LOCATION ---
+            if (pendingResumeDest) {
+                drawRoute(L.latLng(pendingResumeDest.lat, pendingResumeDest.lng), false, pendingWasNavigating);
+                pendingResumeDest = null; 
+            }
         } else {
             targetPos = newPos;
             cancelAnimationFrame(animationFrame);
@@ -459,7 +498,6 @@ if (!isViewerMode) {
         }
     }, null, { enableHighAccuracy: true, maximumAge: 0 });
 
-    // RESTORED SEARCH & MENU LOGIC
     const searchInput = document.getElementById('searchInput');
     const suggestionsBox = document.getElementById('suggestions');
     searchInput.addEventListener('input', (e) => {
@@ -511,10 +549,29 @@ document.getElementById('compassBtn').onclick = function() {
   }
 };
 
+// --- 5. THEME TOGGLE (Saves to LocalStorage) ---
+// Set initial correct icon state
+window.addEventListener('DOMContentLoaded', () => {
+    const icon = document.querySelector('#themeToggleBtn i');
+    if (document.body.classList.contains('dark-mode')) {
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+    }
+});
+
 document.getElementById('themeToggleBtn').addEventListener('click', () => {
   document.body.classList.toggle('dark-mode');
-  const icon = document.getElementById('themeToggleBtn').querySelector('i');
-  icon.classList.toggle('fa-moon'); icon.classList.toggle('fa-sun');
+  const isDark = document.body.classList.contains('dark-mode');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light'); // Save theme
+
+  const icon = document.querySelector('#themeToggleBtn i');
+  if (isDark) {
+      icon.classList.remove('fa-moon');
+      icon.classList.add('fa-sun');
+  } else {
+      icon.classList.remove('fa-sun');
+      icon.classList.add('fa-moon');
+  }
 });
 
 setInterval(() => { document.getElementById("time").textContent = new Date().toLocaleTimeString("en-GB", {hour12:false}); }, 1000);
